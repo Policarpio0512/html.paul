@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yu-Gi-Oh! Millennium Vault | Colección Holográfica & Simulador</title>
+  <meta name="description" content="Explorador holográfico interactivo de cartas de Yu-Gi-Oh! con vista 3D foil, simulador de apertura de sobres, creador de barajas y calculadora de puntos de vida de duelo.">
+  <meta name="keywords" content="Yu-Gi-Oh, Cartas Yu-Gi-Oh, Mago Oscuro, Ojos Azules, Simulador, Deck Builder, Duelo, Holographic 3D">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Canvas de fondo para partículas y runas místicas -->
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="app-container">
+
+    <!-- Header Principal -->
+    <header class="header">
+      <div class="header-top">
+        <div class="logo-area">
+          <!-- Icono Ojo de Anubis / Rompecabezas del Milenio en SVG -->
+          <svg class="millennium-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <polygon points="50,5 95,85 5,85" stroke="#ffd700" stroke-width="5" fill="rgba(245, 197, 24, 0.15)"/>
+            <polygon points="50,25 78,75 22,75" stroke="#f5c518" stroke-width="3" fill="none"/>
+            <circle cx="50" cy="55" r="14" stroke="#ffd700" stroke-width="3" fill="#0b0f1a"/>
+            <circle cx="50" cy="55" r="6" fill="#00f2fe"/>
+            <path d="M50 41 L50 35 M36 55 L30 55 M64 55 L70 55 M50 69 L50 75" stroke="#ffd700" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+          <div class="brand-text">
+            <h1>YU-GI-OH!</h1>
+            <p>Millennium Vault &bull; Base de Datos & Duelo</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button id="btnSoundToggle" class="btn-icon-sound" title="Activar/Silenciar Efectos de Audio">
+            <span id="soundIcon">🔊</span>
+            <span id="soundText">Efectos: ON</span>
+          </button>
+          <button id="btnOpenDeckQuick" class="btn-deck-toggle">
+            <span>🎴 Mi Baraja</span>
+            <span id="headerDeckCount" class="badge-deck-count">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de navegación por pestañas -->
+      <nav class="tabs-nav" aria-label="Navegación principal">
+        <button id="tabBtnExplorer" class="tab-btn active" data-target="viewExplorer">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zm0 9l-8-4-2 1 10 5 10-5-2-1-8 4zm0 6l-8-4-2 1 10 5 10-5-2-1-8 4z"/></svg>
+          Explorador de Cartas
+        </button>
+        <button id="tabBtnPacks" class="tab-btn" data-target="viewPacks">
+          <svg viewBox="0 0 24 24"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z"/></svg>
+          Abrir Sobres (Packs)
+        </button>
+        <button id="tabBtnDeck" class="tab-btn" data-target="viewDeck">
+          <svg viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+          Creador de Barajas
+        </button>
+        <button id="tabBtnDuel" class="tab-btn" data-target="viewDuel">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+          Calculador de Duelo (LP)
+        </button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- ==========================================
+           VISTA 1: EXPLORADOR DE CARTAS
+           ========================================== -->
+      <section id="viewExplorer" class="view-panel active">
+        <!-- Panel de Búsqueda y Filtros -->
+        <div class="search-filter-box">
+          <div class="search-input-wrapper">
+            <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+            <input type="text" id="cardSearchInput" class="search-input" placeholder="Buscar por nombre, arquetipo o descripción (ej: Mago Oscuro, Dragón Blanco, Exodia)..." autocomplete="off">
+            <button id="btnClearSearch" class="clear-search-btn" title="Limpiar búsqueda">&times;</button>
+          </div>
+
+          <div class="filters-row">
+            <div class="filter-group">
+              <label for="filterType">Tipo de Carta</label>
+              <select id="filterType" class="custom-select">
+                <option value="ALL">Todos los Tipos</option>
+                <option value="Normal Monster">Monstruo Normal</option>
+                <option value="Effect Monster">Monstruo de Efecto</option>
+                <option value="Fusion Monster">Monstruo de Fusión</option>
+                <option value="Synchro Monster">Monstruo Synchro</option>
+                <option value="XYZ Monster">Monstruo XYZ</option>
+                <option value="Link Monster">Monstruo Enlace (Link)</option>
+                <option value="Spell Card">Carta Mágica</option>
+                <option value="Trap Card">Carta de Trampa</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="filterAttribute">Atributo</label>
+              <select id="filterAttribute" class="custom-select">
+                <option value="ALL">Todos los Atributos</option>
+                <option value="DARK">OSCURIDAD (Dark)</option>
+                <option value="LIGHT">LUZ (Light)</option>
+                <option value="EARTH">TIERRA (Earth)</option>
+                <option value="WATER">AGUA (Water)</option>
+                <option value="FIRE">FUEGO (Fire)</option>
+                <option value="WIND">VIENTO (Wind)</option>
+                <option value="DIVINE">DIVINO (Divine)</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="filterLevel">Nivel / Rango</label>
+              <select id="filterLevel" class="custom-select">
+                <option value="ALL">Cualquier Nivel</option>
+                <option value="1">Nivel 1</option>
+                <option value="2">Nivel 2</option>
+                <option value="3">Nivel 3</option>
+                <option value="4">Nivel 4</option>
+                <option value="5">Nivel 5</option>
+                <option value="6">Nivel 6</option>
+                <option value="7">Nivel 7</option>
+                <option value="8">Nivel 8</option>
+                <option value="9">Nivel 9</option>
+                <option value="10">Nivel 10+</option>
+              </select>
+            </div>
+
+            <div class="filter-group">
+              <label for="filterSort">Ordenar Por</label>
+              <select id="filterSort" class="custom-select">
+                <option value="default">Relevancia / Nombre</option>
+                <option value="atk-desc">ATK: Mayor a Menor</option>
+                <option value="def-desc">DEF: Mayor a Menor</option>
+                <option value="level-desc">Nivel: Mayor a Menor</option>
+                <option value="name-asc">Nombre: A - Z</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Filtros rápidos por Arquetipo legendario -->
+          <div class="archetype-chips">
+            <span class="chips-label">Arquetipos Famosos:</span>
+            <button class="chip-btn active" data-archetype="ALL">Todos</button>
+            <button class="chip-btn" data-archetype="Dark Magician">Mago Oscuro</button>
+            <button class="chip-btn" data-archetype="Blue-Eyes">Ojos Azules</button>
+            <button class="chip-btn" data-archetype="Egyptian God">Dioses Egipcios</button>
+            <button class="chip-btn" data-archetype="Exodia">Exodia</button>
+            <button class="chip-btn" data-archetype="Red-Eyes">Ojos Rojos</button>
+            <button class="chip-btn" data-archetype="HERO">HÉROE Elemental</button>
+            <button class="chip-btn" data-archetype="Cyber Dragon">Ciber Dragón</button>
+          </div>
+        </div>
+
+        <!-- Barra de conteo de resultados -->
+        <div class="results-bar">
+          <div id="resultsCount" class="results-count">Mostrando <span>0</span> cartas</div>
+          <div class="api-source-badge">
+            <span class="dot"></span> Base de Datos YGOPRODeck En Vivo
+          </div>
+        </div>
+
+        <!-- Spinner de carga -->
+        <div id="loadingSpinner" class="spinner" style="display: none;"></div>
+
+        <!-- Cuadrícula de Cartas -->
+        <div id="cardsGrid" class="cards-grid">
+          <!-- Se llena dinámicamente con app.js -->
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VISTA 2: ABRIR SOBRES DE CARTAS
+           ========================================== -->
+      <section id="viewPacks" class="view-panel">
+        <div class="booster-container">
+          <div class="booster-selector">
+            <button class="booster-choice-btn active" data-pack="legendary">⚡ Sobre: Leyenda del Duelo</button>
+            <button class="booster-choice-btn" data-pack="pharaoh">👑 Sobre: Bóveda del Faraón</button>
+            <button class="booster-choice-btn" data-pack="dragons">🐉 Sobre: El Despertar de los Dragones</button>
+          </div>
+
+          <!-- Escenario del Sobre 3D -->
+          <div id="packStage" class="pack-stage">
+            <div id="packWrapper" class="pack-wrapper" title="¡Haz click para rasgar y abrir el sobre!">
+              <div class="booster-pack-3d">
+                <div class="booster-crimp-top"></div>
+                
+                <div class="pack-art">
+                  <div id="packTitle" class="pack-logo">LEYENDA DEL DUELO</div>
+                  <div class="pack-image-preview">
+                    <img id="packArtImage" src="https://images.ygoprodeck.com/images/cards/89631139.jpg" alt="Portada de Sobre">
+                  </div>
+                  <div class="pack-instruction">¡Haz Click para Abrir!</div>
+                </div>
+
+                <div class="booster-crimp-bottom"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cartas Reveladas tras abrir -->
+          <div id="revealedCardsArea" class="revealed-cards-area">
+            <h2 style="font-family: 'Cinzel', serif; color: var(--gold-light); text-align: center;">¡Cartas Obtenidas!</h2>
+            <div id="revealedGrid" class="revealed-grid">
+              <!-- Cartas animadas reveladas -->
+            </div>
+            <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+              <button id="btnOpenAnotherPack" class="btn-deck-action btn-accent">✨ Abrir Otro Sobre</button>
+              <button id="btnAddAllToDeck" class="btn-deck-action">📥 Añadir Todas a Mi Baraja</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VISTA 3: CREADOR DE BARAJAS (DECK BUILDER)
+           ========================================== -->
+      <section id="viewDeck" class="view-panel">
+        <div class="deck-builder-layout">
+          <!-- Panel Lateral de Estadísticas -->
+          <aside class="deck-stats-panel">
+            <h3>Estadísticas de Baraja</h3>
+            
+            <div class="deck-count-indicator">
+              <span id="deckTotalCards" class="deck-count-big">0</span>
+              <span class="deck-count-limit">/ 60 Cartas (Mín. 40)</span>
+            </div>
+
+            <!-- Barra de composición -->
+            <div class="deck-composition-bar">
+              <div id="compMonstersBar" class="comp-monster" style="width: 0%" title="Monstruos"></div>
+              <div id="compSpellsBar" class="comp-spell" style="width: 0%" title="Magias"></div>
+              <div id="compTrapsBar" class="comp-trap" style="width: 0%" title="Trampas"></div>
+            </div>
+
+            <div class="composition-legend">
+              <div class="legend-item"><span class="legend-dot" style="background:#d97706;"></span> Monstruos: <b id="countMonsters">0</b></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#00d26a;"></span> Magias: <b id="countSpells">0</b></div>
+              <div class="legend-item"><span class="legend-dot" style="background:#ff2a85;"></span> Trampas: <b id="countTraps">0</b></div>
+            </div>
+
+            <div class="deck-actions-vertical">
+              <button id="btnTestHand" class="btn-deck-action btn-accent">
+                <span>🖐️ Probar Mano Inicial (5 Cartas)</span>
+              </button>
+              <button id="btnLoadStarterDeck" class="btn-deck-action">
+                <span>🧙‍♂️ Cargar Baraja de Yugi</span>
+              </button>
+              <button id="btnLoadKaibaDeck" class="btn-deck-action">
+                <span>🐉 Cargar Baraja de Kaiba</span>
+              </button>
+              <button id="btnClearDeck" class="btn-deck-action" style="color: #f87171;">
+                <span>🗑️ Vaciar Baraja</span>
+              </button>
+            </div>
+          </aside>
+
+          <!-- Rejilla de Cartas en la Baraja -->
+          <div class="deck-cards-container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+              <h3 style="font-family: 'Cinzel', serif; color: var(--gold-light);">Cartas en tu Baraja Principal</h3>
+              <small style="color: var(--text-muted);">Pasa el ratón para eliminar una carta</small>
+            </div>
+
+            <div id="deckGrid" class="deck-grid">
+              <!-- Se puebla con las cartas agregadas -->
+            </div>
+
+            <div id="emptyDeckNotice" class="empty-deck-notice">
+              <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+              <p>Tu baraja está vacía. ¡Explora cartas o abre sobres para añadir cartas a tu arsenal!</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           VISTA 4: CALCULADORA DE DUELO (LP)
+           ========================================== -->
+      <section id="viewDuel" class="view-panel">
+        <div class="duel-calc-container">
+          
+          <div class="duel-players-grid">
+            <!-- JUGADOR 1 -->
+            <div class="player-card p1">
+              <div class="player-header">
+                <span class="player-name">YUGI (JUGADOR 1)</span>
+                <span class="player-avatar">🧙‍♂️</span>
+              </div>
+
+              <div class="lp-display-box">
+                <span class="lp-label">LIFE POINTS</span>
+                <div id="p1Lp" class="lp-number">8000</div>
+              </div>
+
+              <div class="lp-quick-buttons">
+                <button class="btn-lp damage" onclick="duelManager.modifyLp(1, -500)">-500</button>
+                <button class="btn-lp damage" onclick="duelManager.modifyLp(1, -1000)">-1000</button>
+                <button class="btn-lp damage" onclick="duelManager.modifyLp(1, -2000)">-2000</button>
+                <button class="btn-lp damage" onclick="duelManager.halveLp(1)">/ 2</button>
+                <button class="btn-lp heal" onclick="duelManager.modifyLp(1, 500)">+500</button>
+                <button class="btn-lp heal" onclick="duelManager.modifyLp(1, 1000)">+1000</button>
+                <button class="btn-lp heal" onclick="duelManager.modifyLp(1, 2000)">+2000</button>
+                <button class="btn-lp" onclick="duelManager.resetLp(1)">8000</button>
+              </div>
+
+              <div class="custom-lp-input-row">
+                <input type="number" id="p1CustomAmount" class="custom-lp-input" placeholder="Cantidad..." step="100">
+                <button class="btn-lp damage" style="padding: 0 1rem;" onclick="duelManager.applyCustom(1, false)">Daño</button>
+                <button class="btn-lp heal" style="padding: 0 1rem;" onclick="duelManager.applyCustom(1, true)">Curar</button>
+              </div>
+            </div>
+
+            <!-- JUGADOR 2 -->
+            <div class="player-card p2">
+              <div class="player-header">
+                <span class="player-name">KAIBA (JUGADOR 2)</span>
+                <span class="player-avatar">🐉</span>
+              </div>
+
+              <div class="lp-display-box">
+                <span class="lp-label">LIFE POINTS</span>
+                <div id="p2Lp" class="lp-number">8000</div>
+              </div>
+
+              <div class="lp-quick-buttons">
+                <button class="btn-lp damage" onclick="duelManager.modifyLp(2, -500)">-500</button>
+                <button class="btn-lp damage" onclick="duelManager.modifyLp(2, -1000)">-1000</button>
+                <button class="btn-lp damage" onclick="duelManager.modifyLp(2, -2000)">-2000</button>
+                <button class="btn-lp damage" onclick="duelManager.halveLp(2)">/ 2</button>
+                <button class="btn-lp heal" onclick="duelManager.modifyLp(2, 500)">+500</button>
+                <button class="btn-lp heal" onclick="duelManager.modifyLp(2, 1000)">+1000</button>
+                <button class="btn-lp heal" onclick="duelManager.modifyLp(2, 2000)">+2000</button>
+                <button class="btn-lp" onclick="duelManager.resetLp(2)">8000</button>
+              </div>
+
+              <div class="custom-lp-input-row">
+                <input type="number" id="p2CustomAmount" class="custom-lp-input" placeholder="Cantidad..." step="100">
+                <button class="btn-lp damage" style="padding: 0 1rem;" onclick="duelManager.applyCustom(2, false)">Daño</button>
+                <button class="btn-lp heal" style="padding: 0 1rem;" onclick="duelManager.applyCustom(2, true)">Curar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Herramientas de Duelo: Dado y Moneda -->
+          <div class="duel-tools-card">
+            <div class="tool-box">
+              <div id="diceDisplay" class="tool-display">🎲 6</div>
+              <button id="btnRollDice" class="btn-card-action" style="padding: 0.6rem 1.25rem;">Lanzar Dado (1-6)</button>
+            </div>
+
+            <button id="btnResetBothLp" class="btn-deck-action" style="width: auto; padding: 0.8rem 1.8rem;">
+              🔄 Reiniciar Duelo (8000 LP)
+            </button>
+
+            <div class="tool-box">
+              <div id="coinDisplay" class="tool-display">🪙 C</div>
+              <button id="btnFlipCoin" class="btn-card-action" style="padding: 0.6rem 1.25rem;">Lanzar Moneda</button>
+            </div>
+          </div>
+
+          <!-- Registro de combate del duelo -->
+          <div>
+            <h4 style="font-family: 'Rajdhani', sans-serif; font-size: 1rem; color: var(--gold-light); margin-bottom: 0.5rem;">REGISTRO DE COMBATE</h4>
+            <div id="duelLog" class="duel-log">
+              <div class="log-entry"><span class="log-time">[00:00]</span> ¡El duelo ha comenzado! Ambos duelistas inician con 8000 Life Points.</div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ==========================================
+       MODAL 1: INSPECTOR HOLOGRÁFICO 3D DE CARTA
+       ========================================== -->
+  <div id="cardInspectModal" class="modal-backdrop">
+    <div class="modal-content-card-viewer">
+      <button id="btnCloseModal" class="btn-close-modal" title="Cerrar">&times;</button>
+      
+      <!-- Escenario 3D interactivo -->
+      <div class="modal-card-3d-stage">
+        <div id="interactiveCard3D" class="interactive-card-3d active-holo">
+          <img id="modalCardImg" src="" alt="Carta 3D">
+          <div id="holoGlare" class="holo-glare"></div>
+        </div>
+
+        <!-- Opciones de Foil holográfico -->
+        <div class="rarity-toggles">
+          <button class="btn-rarity" data-foil="none">Normal</button>
+          <button class="btn-rarity active" data-foil="holo">Foil Holo</button>
+          <button class="btn-rarity" data-foil="secret">Secret Rare</button>
+          <button class="btn-rarity" data-foil="gold">Gold Rare</button>
+        </div>
+      </div>
+
+      <!-- Detalles completos de la carta -->
+      <div class="modal-card-details">
+        <div class="modal-card-header">
+          <span id="modalCardCategory" class="card-category-tag">MONSTRUO DE EFECTO</span>
+          <h2 id="modalCardTitle">Mago Oscuro</h2>
+        </div>
+
+        <div id="modalStatsGrid" class="modal-stats-grid">
+          <div class="modal-stat-box">
+            <span class="stat-label">Atributo</span>
+            <span id="modalCardAttr" class="stat-val">OSCURIDAD</span>
+          </div>
+          <div class="modal-stat-box">
+            <span class="stat-label">Nivel / Rango</span>
+            <span id="modalCardLevel" class="stat-val">★ 7</span>
+          </div>
+          <div class="modal-stat-box">
+            <span class="stat-label">Tipo / Raza</span>
+            <span id="modalCardRace" class="stat-val">Lanzador de Conjuros</span>
+          </div>
+          <div class="modal-stat-box">
+            <span class="stat-label">Ataque (ATK)</span>
+            <span id="modalCardAtk" class="stat-val" style="color:#f87171;">2500</span>
+          </div>
+          <div class="modal-stat-box">
+            <span class="stat-label">Defensa (DEF)</span>
+            <span id="modalCardDef" class="stat-val" style="color:#60a5fa;">2100</span>
+          </div>
+          <div class="modal-stat-box">
+            <span class="stat-label">Rareza</span>
+            <span id="modalCardRarity" class="stat-val" style="color:var(--gold-light);">Ultra Rare</span>
+          </div>
+        </div>
+
+        <!-- Descripción o Efecto -->
+        <div class="modal-desc-box">
+          <p id="modalCardDesc"></p>
+        </div>
+
+        <!-- Precios de Mercado -->
+        <div class="modal-prices-box">
+          <div class="price-item">
+            <span>TCGPlayer</span>
+            <span id="modalPriceTcg">$0.00</span>
+          </div>
+          <div class="price-item">
+            <span>Cardmarket</span>
+            <span id="modalPriceCardmarket">€0.00</span>
+          </div>
+          <div class="price-item">
+            <span>Estado Banlist</span>
+            <span id="modalBanStatus" style="color:#10b981;">Permitida (3)</span>
+          </div>
+        </div>
+
+        <!-- Acciones en el modal -->
+        <div class="modal-actions-row">
+          <button id="modalBtnAddToDeck" class="btn-deck-action btn-accent">
+            ➕ Añadir a Mi Baraja
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MODAL 2: PRUEBA DE MANO INICIAL (TEST HAND)
+       ========================================== -->
+  <div id="testHandModal" class="modal-backdrop">
+    <div class="modal-content-hand">
+      <button id="btnCloseHandModal" class="btn-close-modal" title="Cerrar">&times;</button>
+      
+      <h2 style="font-family: 'Cinzel Decorative', serif; color: var(--gold-light); margin-bottom: 0.5rem;">
+        Mano Inicial Robada (5 Cartas)
+      </h2>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">
+        Simulación de robo inicial para comprobar la consistencia de tu baraja.
+      </p>
+
+      <div id="handCardsDisplay" class="hand-cards-display">
+        <!-- 5 cartas robadas -->
+      </div>
+
+      <div style="display: flex; justify-content: center; gap: 1rem;">
+        <button id="btnRedrawHand" class="btn-deck-action btn-accent" style="width: auto; padding: 0.75rem 2rem;">
+          🔄 Robar Otra Mano
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contenedor para Notificaciones Toast -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="default-cards.js"></script>
+  <script src="audio.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
